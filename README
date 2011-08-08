@@ -1,0 +1,11 @@
+This program creates multiple threads, which opens the same file
+(by creating that file if it does not exist), and does fops such
+as read, write, stat, chown on their respective fd. Also some
+threads open the directory and keeps doing readdir. A statistics
+of how many times a fop is performed is maintained. The program
+as of now runs for 10 minutes (600 seconds).
+
+TODO:
+
+Make the time for which the program runs configurable by taking
+command line arguments.

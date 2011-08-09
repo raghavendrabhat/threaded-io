@@ -85,6 +85,7 @@ main(int argc, char *argv[])
                 goto out;
         }
 
+        printf ("Switching over to the working directory %s\n", playground);
         ret = chdir (playground);
         if (ret == -1) {
                 fprintf (stderr, "Error changing directory to the playground %s",

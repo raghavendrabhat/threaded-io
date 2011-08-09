@@ -10,13 +10,13 @@
 #include <pthread.h>
 #include <dirent.h>
 
-int open_thread (void *);
-int fstat_thread (void *);
-int read_thread (void *);
-int write_truncate_thread (void *);
-int chown_thread (void *);
-void open_lock_close (void *);
-void opendir_and_readdir ();
+void * open_thread (void *);
+void * fstat_thread (void *);
+void * read_thread (void *);
+void * write_truncate_thread (void *);
+void * chown_thread (void *);
+void * open_lock_close (void *);
+void * opendir_and_readdir ();
 
 int thread1_ret;
 int thread2_ret;

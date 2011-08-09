@@ -5,19 +5,25 @@ int
 main(int argc, char *argv[])
 {
         int ret = -1;
-        pthread_t thread1, thread2, thread3, thread4, thread5, thread6, thread7;
-        pthread_t thread8, thread9;
-        char *message1 = "Thread 1";
-        char *message2 = "Thread 2";
-        char *message3 = "Thread 3";
-        char *message4 = "Thread 4";
-        char *message5 = "Thread 5";
-        char *message6 = "Thread 6";
-        char *message7 = "Thread 7";
+        pthread_t thread[10];
+        char *message [] = {"Thread0", "Thread1", "Thread2", "Thread3",
+                            "Thread4", "Thread5", "Thread6", "Thread7",
+                            "Thread8", "Thread9",};
         char playground[1024] = {0,};
         struct stat stbuf = {0,};
+        int  iter[10];
+        int  i = 0;
 
-        int  iret1, iret2, iter3, iter4, iter5, iter6, iter7, iter8, iter9;
+        typedef void *(*thread_pointer)(void *);
+        thread_pointer pointers_thread [] = {open_thread, fstat_thread,
+                                             read_thread,
+                                             write_truncate_thread,
+                                             chown_thread,
+                                             write_truncate_thread,
+                                             open_lock_close,
+                                             opendir_and_readdir,
+                                             opendir_and_readdir,
+        };
 
         open_t *file = NULL;
         file = (open_t *)calloc(1,sizeof(*file));
@@ -93,15 +99,16 @@ main(int argc, char *argv[])
 
         both->open = file;
         both->fstat = inode;
-        iret1 = pthread_create (&thread1, NULL, (void *)open_thread, (void *) both);
-        iret2 = pthread_create (&thread2, NULL, (void *)fstat_thread, (void *) both);
-        iter3 = pthread_create (&thread3, NULL, (void *)read_thread, (void *)both);
-        iter4 = pthread_create (&thread4, NULL, (void *)write_truncate_thread, (void *)both);
-        iter5 = pthread_create (&thread5, NULL, (void *)chown_thread, (void *)both);
-        iter6 = pthread_create (&thread6, NULL, (void *)write_truncate_thread, (void *)both);
-        iter7 = pthread_create (&thread7, NULL, (void *)open_lock_close, (void *)both);
-        iter8 = pthread_create (&thread8, NULL, (void *)opendir_and_readdir, NULL);
-        iter9 = pthread_create (&thread9, NULL, (void *)opendir_and_readdir, NULL);
+        for (i = 0; i <= 6; i++) {
+                iter[i] = pthread_create (&thread[i], NULL, pointers_thread[i],
+                                          (void *)both);
+        }
+
+        while (i < 9) {
+                iter[i] = pthread_create (&thread[i], NULL, pointers_thread[i],
+                                          NULL);
+                i++;
+        }
 
         sleep (600);
 
@@ -132,7 +139,7 @@ out:
         return ret;
 }
 
-void
+void *
 open_lock_close (void *tmp)
 {
         oft *all = (oft *)tmp;
@@ -217,10 +224,10 @@ open_lock_close (void *tmp)
                 close (fd);
         }
 
-        return;
+        return NULL;
 }
 
-int
+void *
 open_thread(void *tmp)
 {
         oft *all = (oft *)tmp;
@@ -250,10 +257,10 @@ open_thread(void *tmp)
 out:
         if (file)
                 free(file);
-        return ret;
+        return NULL;
 }
 
-int
+void *
 fstat_thread(void *ptr)
 {
         oft *all = (oft *)ptr;
@@ -301,10 +308,10 @@ out:
                 free (inode->buf);
         if (inode)
                 free(inode);
-        return ret;
+        return NULL;
 }
 
-int
+void *
 read_thread (void *ptr)
 {
         oft *all = NULL;
@@ -341,10 +348,10 @@ read_thread (void *ptr)
         ret = 0;
 out:
         close (fd);
-        return ret;
+        return NULL;
 }
 
-int
+void *
 write_truncate_thread (void *ptr)
 {
         oft *all = NULL;
@@ -408,10 +415,10 @@ write_truncate_thread (void *ptr)
 
 out:
         close (fd);
-        return ret;
+        return NULL;
 }
 
-int
+void *
 chown_thread (void *ptr)
 {
         oft *all = NULL;
@@ -461,10 +468,10 @@ chown_thread (void *ptr)
         ret = 0;
 out:
         close (fd);
-        return ret;
+        return NULL;
 }
 
-void
+void *
 opendir_and_readdir ()
 {
         /* oft *all = NULL; */
@@ -519,5 +526,5 @@ opendir_and_readdir ()
                 dir = NULL;
         }
 
-        return;
+        return NULL;
 }

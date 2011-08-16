@@ -2,7 +2,7 @@ The program creates multiple threads, where each thread opens the same file
 (thus creating the file if it does not exist), and does different operations
 such as read, write, stat, chown etc on their respective ids. The program runs
 for 10 minutes and at the end gives the statistics of how many times each fop
-is done.
+is done. It also does readdir from different threads.
 
 TODO:
 

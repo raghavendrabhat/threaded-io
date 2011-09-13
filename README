@@ -7,3 +7,9 @@ is done. It also does readdir from different threads.
 TODO:
 
 Make the time configurable through the command line argument.
+
+
+2> Web server:
+
+It is a web server which shows the files and the directories present in the exported
+directory.

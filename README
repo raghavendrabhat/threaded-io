@@ -13,3 +13,8 @@ Make the time configurable through the command line argument.
 
 It is a web server which shows the files and the directories present in the exported
 directory.
+
+3> Createbench:
+
+Creates different types of the files such as directories, regular files, fifos, device files
+etc, and gives the average time needed to create each type of the entry.

@@ -18,3 +18,8 @@ directory.
 
 Creates different types of the files such as directories, regular files, fifos, device files
 etc, and gives the average time needed to create each type of the entry.
+
+4> sparse:
+
+Creates a sparse file whose size can be given as an argument (default 5GB) and the filename is also given as
+an argument (creates the file if it does not exist) and then writes some data to an offset.

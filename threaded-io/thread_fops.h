@@ -50,16 +50,19 @@ struct open_fstat {
 typedef struct open_fstat oft;
 
 #define open_validate_error_goto(filename, flag, mode)   do {           \
+                pthread_mutex_lock (&info.mutex);                       \
+                {                                                       \
+                        info.num_open++;                                \
+                }                                                       \
+                pthread_mutex_unlock (&info.mutex);                     \
                 fd = open (filename, flag, mode);                       \
                 if (fd == -1) {                                         \
-                        fprintf (stderr, "%s: open error (%s)n", __FUNCTION__, \
-                                 strerror (errno));                     \
                         ret = -1;                                       \
                         goto out;                                       \
                 } else {                                                \
                         pthread_mutex_lock (&info.mutex);               \
                         {                                               \
-                                info.num_open++;                        \
+                                info.num_open_success++;                \
                         }                                               \
                         pthread_mutex_unlock (&info.mutex);             \
                 }                                                       \
@@ -68,15 +71,25 @@ typedef struct open_fstat oft;
 typedef struct info {
         pthread_mutex_t mutex;
         unsigned int num_open;
+        unsigned int num_open_success;
         unsigned int flocks;
+        unsigned int flocks_success;
         unsigned int fcntl_locks;
+        unsigned int fcntl_locks_success;
         unsigned int read;
+        unsigned int read_success;
         unsigned int write;
+        unsigned int write_success;
         unsigned int fstat;
+        unsigned int fstat_success;
         unsigned int truncate;
+        unsigned int truncate_success;
         unsigned int chown;
+        unsigned int chown_success;
         unsigned int opendir;
+        unsigned int opendir_success;
         unsigned int readdir;
+        unsigned int readdir_success;
 } info_t;
 
 info_t info = {0,};

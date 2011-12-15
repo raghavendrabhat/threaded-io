@@ -114,16 +114,17 @@ main(int argc, char *argv[])
         sleep (600);
 
         printf ("Total Statistics ======>\n");
-        printf ("Opens        : %d\n", info.num_open);
-        printf ("Reads        : %d\n", info.read);
-        printf ("Writes       : %d\n", info.write);
-        printf ("Flocks       : %d\n", info.flocks);
-        printf ("fcntl locks  : %d\n", info.fcntl_locks);
-        printf ("Truncates    : %d\n", info.truncate);
-        printf ("Fstat        : %d\n", info.fstat);
-        printf ("Chown        : %d\n", info.chown);
-        printf ("Opendir      : %d\n", info.opendir);
-        printf ("Readdir      : %d\n", info.readdir);
+        printf ("Opens        : %d/%d\n", info.num_open_success,info.num_open);
+        printf ("Reads        : %d/%d\n", info.read_success, info.read);
+        printf ("Writes       : %d/%d\n", info.write_success, info.write);
+        printf ("Flocks       : %d/%d\n", info.flocks_success, info.flocks);
+        printf ("fcntl locks  : %d/%d\n", info.fcntl_locks_success,
+                info.fcntl_locks);
+        printf ("Truncates    : %d/%d\n", info.truncate_success, info.truncate);
+        printf ("Fstat        : %d/%d\n", info.fstat_success, info.fstat);
+        printf ("Chown        : %d/%d\n", info.chown_success, info.chown);
+        printf ("Opendir      : %d/%d\n", info.opendir_success, info.opendir);
+        printf ("Readdir      : %d/%d\n", info.readdir_success, info.readdir);
 
         ret = 0;
 out:
@@ -156,9 +157,6 @@ open_lock_close (void *tmp)
         while (1) {
                 fd = open (file->filename, file->flags, file->mode);
                 if (fd == -1) {
-                        fprintf (stderr, "%s=>Error: cannot open the file %s "
-                                 "(%s)\n", __FUNCTION__, file->filename,
-                                 strerror (errno));
                         return;
                 } else {
                         pthread_mutex_lock (&info.mutex);
@@ -174,53 +172,55 @@ open_lock_close (void *tmp)
                 lock.l_len = 0;
                 lock.l_pid = 0;
 
+                pthread_mutex_lock (&info.mutex);
+                {
+                        info.fcntl_locks++;
+                }
+                pthread_mutex_unlock (&info.mutex);
+
                 ret = fcntl (fd, F_SETLK, &lock);
-                if (ret == -1)
-                        fprintf (stderr, "Error: cannot lock the file %s (%s)\n",
-                                 file->filename, strerror (errno));
-                else {
+                if (ret == 0) {
                         pthread_mutex_lock (&info.mutex);
                         {
-                                info.fcntl_locks++;
+                                info.fcntl_locks_success++;
                         }
                         pthread_mutex_unlock (&info.mutex);
                 }
+
+                pthread_mutex_lock (&info.mutex);
+                {
+                        info.flocks++;
+                }
+                pthread_mutex_unlock (&info.mutex);
 
                 ret = flock (fd, LOCK_SH);
-                if (ret == -1)
-                        fprintf (stderr, "Error: cannot flock the file %s (%s)\n",
-                                 file->filename, strerror (errno));
-                else {
+                if (ret == 0) {
                         pthread_mutex_lock (&info.mutex);
                         {
-                                info.flocks++;
+                                info.flocks_success++;
                         }
                         pthread_mutex_unlock (&info.mutex);
                 }
 
+                pthread_mutex_lock (&info.mutex);
+                {
+                        info.write++;
+                }
+                pthread_mutex_unlock (&info.mutex);
+
                 ret = write (fd, data, strlen (data));
-                if (ret == -1)
-                        fprintf (stderr, "Error: cannot write the file %s (%s)\n",
-                                 file->filename, strerror (errno));
-                else {
+                if (ret == 0) {
                         pthread_mutex_lock (&info.mutex);
                         {
-                                info.write++;
+                                info.write_success++;
                         }
                         pthread_mutex_unlock (&info.mutex);
                 }
 
                 lock.l_type = F_UNLCK;
                 ret = fcntl (fd, F_SETLK, &lock);
-                if (ret == -1)
-                        fprintf (stderr, "Error: cannot unlock the file %s"
-                                " (%s)\n", file->filename, strerror (errno));
 
                 ret = flock (fd, LOCK_UN);
-                if (ret == -1)
-                        fprintf (stderr, "Error: cannot unlock the flock on "
-                                 "the file %s (%s)\n", file->filename,
-                                 strerror (errno));
 
                 close (fd);
         }
@@ -240,15 +240,19 @@ open_thread(void *tmp)
         int fd = -1;
 
         while (1) {
+                pthread_mutex_lock (&info.mutex);
+                {
+                        info.num_open++;
+                }
+                pthread_mutex_unlock (&info.mutex);
+
                 if (fd = open (file->filename, file->flags, file->mode) == -1) {
-                        fprintf(stderr, "%s:open error (%s)\n", __FUNCTION__,
-                                strerror(errno));
                         ret = -1;
                         goto out;
                 } else {
                         pthread_mutex_lock (&info.mutex);
                         {
-                                info.num_open++;
+                                info.num_open_success++;
                         }
                         pthread_mutex_unlock (&info.mutex);
                 }
@@ -273,30 +277,38 @@ fstat_thread(void *ptr)
         file = all->open;
         inode = all->fstat;
 
+        pthread_mutex_lock (&info.mutex);
+        {
+                info.num_open++;
+        }
+        pthread_mutex_unlock (&info.mutex);
+
         fd = open (file->filename, file->flags, file->mode);
         if (fd == -1) {
-                fprintf (stderr, "%s: open error (%s)\n", __FUNCTION__,
-                         strerror (errno));
                 ret = -1;
                 goto out;
         } else {
                 pthread_mutex_lock (&info.mutex);
                 {
-                        info.num_open++;
+                        info.num_open_success++;
                 }
                 pthread_mutex_unlock (&info.mutex);
         }
 
         while (1) {
+                pthread_mutex_lock (&info.mutex);
+                {
+                        info.fstat++;
+                }
+                pthread_mutex_unlock (&info.mutex);
+
                 if (fstat(fd, inode->buf) == -1) {
-                        fprintf (stderr, "%s:fstat error\n",
-                                 strerror(errno));
                         ret = -1;
                         goto out;
                 } else {
                         pthread_mutex_lock (&info.mutex);
                         {
-                                info.fstat++;
+                                info.fstat_success++;
                         }
                         pthread_mutex_unlock (&info.mutex);
                 }
@@ -329,9 +341,14 @@ read_thread (void *ptr)
         open_validate_error_goto(file->filename, file->flags, file->mode);
 
         while (1) {
+                pthread_mutex_lock (&info.mutex);
+                {
+                        info.read++;
+                }
+                pthread_mutex_unlock (&info.mutex);
+
                 ret = read (fd, buffer, 22);
                 if (ret == -1) {
-                        fprintf (stderr, "%s: read error\n", strerror (errno));
                         goto out;
                 }
 
@@ -340,7 +357,7 @@ read_thread (void *ptr)
                 } else {
                         pthread_mutex_lock (&info.mutex);
                         {
-                                info.read++;
+                                info.read_success++;
                         }
                         pthread_mutex_unlock (&info.mutex);
                 }
@@ -368,38 +385,50 @@ write_truncate_thread (void *ptr)
         file = all->open;
         stat = all->fstat;
 
+        pthread_mutex_lock (&info.mutex);
+        {
+                info.num_open++;
+        }
+        pthread_mutex_unlock (&info.mutex);
+
         fd = open (file->filename, file->flags | O_APPEND, file->mode);
         if (fd == -1) {
-                fprintf (stderr, "%s: open error (%s)\n", __FUNCTION__,
-                         strerror (errno));
                 ret = -1;
                 goto out;
         } else {
                 pthread_mutex_lock (&info.mutex);
                 {
-                        info.num_open++;
+                        info.num_open_success++;
                 }
                 pthread_mutex_unlock (&info.mutex);
         }
 
         while (1) {
+                pthread_mutex_lock (&info.mutex);
+                {
+                        info.write++;
+                }
+                pthread_mutex_unlock (&info.mutex);
+
                 ret = write (fd, buffer, strlen (buffer));
                 bytes_written = ret;
                 if (ret == -1) {
-                        fprintf (stderr, "%s: write error\n", strerror (errno));
                         goto out;
                 }
 
                 if ((data + bytes_written) >= 4096) {
+                        pthread_mutex_lock (&info.mutex);
+                        {
+                                info.truncate++;
+                        }
+                        pthread_mutex_unlock (&info.mutex);
                         ret = ftruncate (fd, 0);
                         if (ret == -1) {
-                                fprintf (stderr, "%s: truncate error\n",
-                                         strerror (errno));
                                 goto out;
                         } else {
                                 pthread_mutex_lock (&info.mutex);
                                 {
-                                        info.truncate++;
+                                        info.truncate_success++;
                                 }
                                 pthread_mutex_unlock (&info.mutex);
                         }
@@ -408,7 +437,7 @@ write_truncate_thread (void *ptr)
                         data = data + bytes_written;
                          pthread_mutex_lock (&info.mutex);
                          {
-                                 info.write++;
+                                 info.write_success++;
                          }
                          pthread_mutex_unlock (&info.mutex);
                 }
@@ -436,31 +465,39 @@ chown_thread (void *ptr)
         open_validate_error_goto(file->filename, file->flags, file->mode);
 
         while (1) {
+                pthread_mutex_lock (&info.mutex);
+                {
+                        info.fstat++;
+                }
+                pthread_mutex_unlock (&info.mutex);
+
                 ret = fstat (fd, &stat_buf);
                 if (ret == -1) {
-                        fprintf (stderr, "%s: fstat error.(%s)",
-                                 strerror (errno), __FUNCTION__);
                         goto out;
                 } else {
                         pthread_mutex_lock (&info.mutex);
                         {
-                                info.fstat++;
+                                info.fstat_success++;
                         }
                         pthread_mutex_unlock (&info.mutex);
                 }
 
-                if (stat_buf.st_uid == 1315 && stat_buf.st_gid == 1315) 
+                pthread_mutex_lock (&info.mutex);
+                {
+                        info.chown++;
+                }
+                pthread_mutex_unlock (&info.mutex);
+                if (stat_buf.st_uid == 1315 && stat_buf.st_gid == 1315)
                         ret = fchown (fd, 2222, 2222);
                 else
                         ret = fchown (fd, 1315, 1315);
 
                 if (ret == -1) {
-                        fprintf (stderr, "%s: chown error\n", strerror (errno));
                         goto out;
                 } else {
                         pthread_mutex_lock (&info.mutex);
                         {
-                                info.chown++;
+                                info.chown_success++;
                         }
                         pthread_mutex_unlock (&info.mutex);
                 }
@@ -475,30 +512,25 @@ out:
 void *
 opendir_and_readdir ()
 {
-        /* oft *all = NULL; */
-        /* fstat_t buf_stat = NULL; */
-        /* open_t *file_open = NULL; */
         DIR    *dir = NULL;
         char   dir_to_open[1024] = {0,};
         int    old_errno = 0;
         struct dirent *entry = NULL;
 
-        /* all = (oft *)ptr; */
-        /* buf_stat = all->fstat; */
-        /* file_open = all->open; */
-
         getcwd (dir_to_open, sizeof (dir_to_open));
         while (1) {
+                pthread_mutex_lock (&info.mutex);
+                {
+                        info.opendir++;
+                }
+                pthread_mutex_unlock (&info.mutex);
                 dir = opendir (dir_to_open);
                 if (!dir) {
-                        fprintf (stderr, "Error: Error in opening the directory"
-                                 " %s --> %s. (%s).", dir_to_open,
-                                 strerror (errno), __FUNCTION__);
                         break;
                 }  else {
                         pthread_mutex_lock (&info.mutex);
                         {
-                                info.opendir++;
+                                info.opendir_success++;
                         }
                         pthread_mutex_unlock (&info.mutex);
                 }
@@ -507,21 +539,23 @@ opendir_and_readdir ()
                 errno = 0;
 
                 do {
+                        pthread_mutex_lock (&info.mutex);
+                        {
+                                info.readdir++;
+                        }
+                        pthread_mutex_unlock (&info.mutex);
                         entry = readdir (dir);
                         if (entry) {
                                 entry->d_off = telldir (dir);
                                 pthread_mutex_lock (&info.mutex);
                                 {
-                                        info.readdir++;
+                                        info.readdir_success++;
                                 }
                                 pthread_mutex_unlock (&info.mutex);
                         }
                 } while (entry);
 
                 if (errno != 0)
-                        fprintf (stderr, "Error in reading the directory %s"
-                                 " ---> %s (%s)", dir_to_open, strerror (errno),
-                                 __FUNCTION__);
 
                 closedir (dir);
                 dir = NULL;

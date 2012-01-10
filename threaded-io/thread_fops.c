@@ -44,12 +44,25 @@ thread_parse_opts (int key, char *arg,
 
         case 't':
         {
-                unsigned long long  time = 0;
-                char               *tail = NULL;
+                long long  time = 0;
+                char       *tail = NULL;
 
-                time = strtoull (arg, &tail, 10);
-                if (errno == ERANGE || errno == EINVAL)
+                errno = 0;
+                time = strtoll (arg, &tail, 10);
+                if (errno == ERANGE || errno == EINVAL) {
+                        fprintf (stderr, "invalid time (%s)\n", arg);
                         return -1;
+                }
+
+                if (tail[0] != '\0') {
+                        fprintf (stderr, "invalid time (%s)\n", arg);
+                        return -1;
+                }
+
+                if (time < 0) {
+                        fprintf (stderr, "time (%s) cannot be -ve\n", arg);
+                        return -1;
+                }
 
                 thread_config.time = time;
         }

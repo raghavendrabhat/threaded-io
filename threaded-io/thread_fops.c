@@ -10,7 +10,7 @@ thread_default_config (void);
 static thread_config_t thread_config;
 
 static struct argp_option thread_options[] = {
-        { "dir", 'd', "DIRECTORY", 0, "absolure or relative path of the tests"},
+        { "dir", 'd', "DIRECTORY", 0, "absolute or relative path of the tests"},
         { "time", 't', "TIME", 0, "time duration for which test should run"
           " (defaults to 600 seconds)"},
         {0, 0, 0, 0, 0}
@@ -25,6 +25,9 @@ thread_parse_opts (int key, char *arg,
         {
                 int len = 0;
                 int pathlen = 0;
+                int ret = -1;
+                int old_errno = 0;
+                struct stat stbuf = {0,};
 
                 len = strlen (arg) + strlen ("playground");
                 if (len > UNIX_PATH_MAX) {
@@ -38,7 +41,24 @@ thread_parse_opts (int key, char *arg,
                 if (thread_config.directory[pathlen - 1] != '/')
                         thread_config.directory[pathlen] = '/';
                 thread_config.directory[pathlen+1] = '\0';
+
+                old_errno = errno;
+                errno = 0;
+                ret = stat (thread_config.directory, &stbuf);
+                if ((ret == -1) || !S_ISDIR (stbuf.st_mode)) {
+                        if (errno == ENOENT) {
+                                fprintf (stderr, "the directory %s does not "
+                                         "exist\n", thread_config.directory);
+                                return -1;
+                        } else {
+                                fprintf (stderr, "given path %s is not a "
+                                         "directory\n",
+                                         thread_config.directory);
+                                return -1;
+                        }
+                }
                 strcat (thread_config.directory, "playground");
+                errno = old_errno;
         }
         break;
 
@@ -115,44 +135,6 @@ thread_default_config (void)
         thread_config.time = 600;
 }
 
-static int
-thread_valid_config (void)
-{
-        int ret = -1;
-        char *dir = NULL;
-        char *dirc = NULL;
-        struct stat stbuf = {0,};
-
-        dirc = strdup (thread_config.directory);
-        if (!dirc)
-                goto out;
-
-        dir = dirname (dirc);
-
-        ret = stat (dir, &stbuf);
-        if (ret == -1) {
-                fprintf (stderr, "cannot stat the playground (%s). (%s)",
-                         dir, strerror (errno));
-                return ret;
-        }
-
-        if (thread_config.time < 0) {
-                fprintf (stderr, "time cannot be -ve (%llu)",
-                         thread_config.time);
-                ret = -1;
-                return ret;
-        }
-
-        ret = 0;
-
-out:
-        if (dirc) {
-                free (dirc);
-                dirc = NULL;
-        }
-        return ret;
-}
-
 int
 main(int argc, char *argv[])
 {
@@ -185,10 +167,6 @@ main(int argc, char *argv[])
                 fprintf (stderr, "%s: argp_parse() failed\n", argv[0]);
                 goto err;
         }
-
-        ret = thread_valid_config ();
-        if (ret == -1)
-                goto err;
 
         open_t *file = NULL;
         file = (open_t *)calloc(1,sizeof(*file));

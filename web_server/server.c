@@ -156,7 +156,7 @@ int serv_clients (int fd, char *filepath)
                         ret = -1;
                         goto out;
                 }
-                
+
                 errno = 0;
                 /* while (!errno) { */
                 /*         entry = readdir (dir); */
@@ -166,10 +166,10 @@ int serv_clients (int fd, char *filepath)
                 /*                 ret = -1; */
                 /*                 goto out; */
                 /*         } */
-                        
+
                 /*         if ((!entry) && (errno == 0)) */
                 /*                 goto write; */
-                        
+
                 /*         entry->d_type = stbuf.st_mode; */
                 /*         entry->d_off = telldir (dir); */
                 /*         strncat (buf, entry->d_name, strlen (entry->d_name)); */
@@ -198,7 +198,7 @@ write:
         } else if (S_ISDIR (stbuf.st_mode)) {
                 ret = write (fd, buf, length);
         }
-        
+
         if (-1 == ret) {
                 fprintf (stderr, "Error while writing to the socket: %s\n",
                          strerror (errno));

@@ -30,29 +30,23 @@ function analyze ()
 
     if [ $type == "ASCII" ]; then
         total_lines=$(grep "^\[" $log_file | wc -l | cut -f1 -d' ');
-        grep "^\[" $log_file | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n > /tmp/functions_file;
-        grep "^\[" $log_file | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n | uniq > /tmp/uniq_function;
+        grep "^\[" $log_file | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n | tee /tmp/functions_file | uniq > /tmp/uniq_function;
 
-        grep -E ' E | W ' $log_file | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n > /tmp/error_functions_file;
-        grep -E ' E | W ' $log_file | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n | uniq > /tmp/error_uniq_function;
+        grep -E ' E | W ' $log_file | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n | tee /tmp/error_functions_file | uniq > /tmp/error_uniq_function;
     fi
 
     if [ $type == "bzip2" ]; then
         total_lines=$(bzcat $log_file | grep "^\[" | wc -l | cut -f1 -d' ');
-        bzcat $log_file | grep "^\[" | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n > /tmp/functions_file;
-        bzcat $log_file | grep "^\[" | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n | uniq > /tmp/uniq_function;
+        bzcat $log_file | grep "^\[" | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n | tee /tmp/functions_file | uniq > /tmp/uniq_function;
 
-        bzcat $log_file | grep -E ' E | W ' | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n > /tmp/error_functions_file;
-        bzcat $log_file | grep -E ' E | W ' | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n | uniq > /tmp/error_uniq_function;
+        bzcat $log_file | grep -E ' E | W ' | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n | tee /tmp/error_functions_file | uniq > /tmp/error_uniq_function;
     fi
 
     if [ $type == "gzip" ]; then
         total_lines=$(zcat $log_file | grep "^\[" | wc -l | cut -f1 -d' ');
-        zcat $log_file | grep "^\[" | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n > /tmp/functions_file;
-        zcat $log_file | grep "^\[" | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n | uniq > /tmp/uniq_function;
+        zcat $log_file | grep "^\[" | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n | tee /tmp/functions_file | uniq > /tmp/uniq_function;
 
-        zcat $log_file | grep -E ' E | W ' | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n > /tmp/error_functions_file;
-        zcat $log_file | grep -E ' E | W ' | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n | uniq > /tmp/error_uniq_function;
+        zcat $log_file | grep -E ' E | W ' | cut -d ']' -f 2 | cut -d ':' -f3 | sort -n | tee /tmp/error_functions_file | uniq > /tmp/error_uniq_function;
     fi
 
     printf "Number\tPercentage\tFunction\n";

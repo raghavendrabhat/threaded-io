@@ -51,23 +51,23 @@ function analyze ()
 
     printf "Number\tPercentage\tFunction\n";
 
-    for i in $(cat /tmp/uniq_function)
+    (for i in $(cat /tmp/uniq_function)
     do
         count=$(grep $i /tmp/functions_file | wc -l);
         percent=$(printf "%.2f" $(echo "($count / $total_lines) * 100" | bc -l));
         printf "%d\t%s\t %s\n" $count $percent $i;
-    done
+    done) | sort -nr
 
     echo -e -n "\n";
 
     echo  "========= Error Functions ========";
     echo -e -n "\n";
-    for i in $(cat /tmp/error_uniq_function)
+    (for i in $(cat /tmp/error_uniq_function)
     do
         count=$(grep $i /tmp/error_functions_file | wc -l);
         percent=$(printf "%.2f" $(echo "($count / $total_lines) * 100" | bc -l));
         printf "%d\t%s\t%s\n" $count $percent $i;
-    done
+    done) | sort -nr
     #grep  "time of crash:" $log_file 2>/dev/null;
 }
 
